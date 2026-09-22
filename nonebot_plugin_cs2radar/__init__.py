@@ -535,10 +535,17 @@ async def handle_five_e_stats(event: MessageEvent, arg: Message = CommandArg()):
     input_str = arg.extract_plain_text().strip()
     if not input_str:
         await five_e_stats.finish("请输入5E玩家域名、ID或昵称，例如: /5e 15429443s91f72")
+    match_count = 5
+    input_parts = input_str.rsplit(maxsplit=1)
+    if len(input_parts) == 2 and input_parts[1].isdigit():
+        if not 1 <= int(input_parts[1]) <= 10:
+            await five_e_stats.finish("查询场数应在 1 到 10 之间。")
+        input_str = input_parts[0].strip()
+        match_count = int(input_parts[1])
     if len(input_str) > 64:
         await five_e_stats.finish("玩家标识过长。")
 
-    await five_e_stats.send(f"正在查询 5E 玩家 {input_str}...")
+    await five_e_stats.send(f"正在查询 5E 玩家 {input_str} 的最近 {match_count} 场...")
     domain = input_str
 
     try:
@@ -552,7 +559,7 @@ async def handle_five_e_stats(event: MessageEvent, arg: Message = CommandArg()):
             domain = search_info["domain"]
             await five_e_stats.send(f"匹配到玩家: {search_info['name']} ({domain})，正在获取详细战绩...")
 
-        data = await five_e_crawler.get_player_data(domain)
+        data = await five_e_crawler.get_player_data(domain, recent_match_count=match_count)
         if (not data.get("nickname") or data["nickname"] == "Unknown") and search_info.get("name"):
             data["nickname"] = search_info["name"]
         if (not data.get("avatar")) and search_info.get("avatar"):

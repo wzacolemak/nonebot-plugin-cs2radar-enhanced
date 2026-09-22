@@ -312,7 +312,7 @@ class FiveECrawler:
             
             return users
 
-    async def get_player_data(self, domain: str):
+    async def get_player_data(self, domain: str, recent_match_count: int = 5):
         async with async_playwright() as p, await p.chromium.launch(headless=True) as browser:
             context = await browser.new_context(
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
@@ -405,7 +405,7 @@ class FiveECrawler:
                     try:
                         data = await response.json()
                         matches = data.get("data", {}).get("match_data", [])
-                        player_data["stats"]["recent_matches"] = matches[:5]
+                        player_data["stats"]["recent_matches"] = matches[:recent_match_count]
                         
                         # Extract nickname and avatar from inferred_info if available
                         inferred = data.get("data", {}).get("inferred_info", {})

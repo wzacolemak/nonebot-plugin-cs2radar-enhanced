@@ -1,6 +1,6 @@
 [project]
 name = "nonebot-plugin-cs2radar"
-version = "0.1.3"
+version = "0.1.4"
 description = "NoneBot2 CS2 雷达插件，支持赛事/选手、5E、完美与官匹战绩查询及对局分析"
 readme = "README.md"
 requires-python = ">=3.10"
