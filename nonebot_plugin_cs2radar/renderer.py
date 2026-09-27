@@ -163,7 +163,7 @@ async def render_results_card(results: list[dict[str, Any]]) -> bytes:
 async def render_stats_card(data: dict) -> bytes:
     template = env.get_template("stats.html")
     stats = data.get("stats", {})
-    combat = _build_highlight_summary(stats, stats.get("career", {}), stats.get("best_season", {}), stats.get("home", {}))
+    combat = _build_highlight_summary(stats, stats.get("career", {}), stats.get("best_season", {}), stats.get("home", {}), (stats.get("home", {}) or {}).get("season_data", {}) or {})
     html_content = template.render(
         nickname=data.get("nickname", "Unknown"),
         avatar=data.get("avatar", ""),
