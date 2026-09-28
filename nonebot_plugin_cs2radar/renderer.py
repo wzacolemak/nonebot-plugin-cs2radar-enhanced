@@ -492,7 +492,7 @@ async def render_match_columns(matches: list, platform: str, start_index: int, t
         total=total if total is not None else end_index_of(cols, start_index),
         now=datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     )
-    return await _secure_html_to_pic(html_content, width=1280)
+    return await _secure_html_to_pic(html_content, width=800)
 
 
 def end_index_of(cols: list, start_index: int) -> int:
