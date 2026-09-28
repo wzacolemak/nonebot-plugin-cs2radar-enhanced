@@ -19,6 +19,23 @@ env = Environment(
 env.filters["safe_image_url"] = safe_image_url
 
 
+def rating_color(value: Any) -> str:
+    try:
+        v = float(str(value).strip())
+    except (TypeError, ValueError):
+        return "#ffffff"
+    if v == 0:
+        return "#ffffff"
+    if v >= 1.1:
+        return "#4ade80"
+    if v <= 0.9:
+        return "#f87171"
+    return "#ffffff"
+
+
+env.filters["rating_color"] = rating_color
+
+
 async def _secure_html_to_pic(html: str, *, width: int) -> bytes:
     return await html_to_pic(
         html=inject_csp(html),

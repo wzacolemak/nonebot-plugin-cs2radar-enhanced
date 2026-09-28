@@ -269,7 +269,7 @@
         {% endif %}
         <div class="section-title">基础数据</div>
         <div class="stats-grid">
-            <div class="card"><div class="label">Rating</div><div class="value">{{ stats.career.rating or '0.00' }}</div></div>
+            <div class="card"><div class="label">Rating</div><div class="value" style="color: {{ (stats.career.rating or '0.00') | rating_color }}">{{ stats.career.rating or '0.00' }}</div></div>
             <div class="card"><div class="label">ADR</div><div class="value">{{ stats.career.adr or stats.best_season.adr or '0.0' }}</div></div>
             <div class="card"><div class="label">RWS</div><div class="value">{{ stats.career.rws or '0.00' }}</div></div>
             <div class="card"><div class="label">KPR</div><div class="value">{{ stats.career.kpr or '0.00' }}</div></div>
@@ -292,7 +292,7 @@
                         <div class="m-info"><span class="m-map">{{ match.map_name }}</span><span class="m-score">{{ match.score }}</span></div>
                     </div>
                     <div class="m-stats">
-                        <div class="m-stat"><span class="m-val">{{ match.rating }}</span><span class="m-lab">Rating</span></div>
+                        <div class="m-stat"><span class="m-val" style="color: {{ match.rating | rating_color }}">{{ match.rating }}</span><span class="m-lab">Rating</span></div>
                         <div class="m-stat"><span class="m-val">{{ match.kill }}/{{ match.death }}</span><span class="m-lab">K/D</span></div>
                         <div class="m-stat"><span class="m-val">{{ match.adr or '0.0' }}</span><span class="m-lab">ADR</span></div>
                     </div>

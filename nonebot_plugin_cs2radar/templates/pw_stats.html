@@ -295,7 +295,7 @@
         </div>
         <div class="section-title">基础数据</div>
         <div class="stats-grid">
-            <div class="card"><span class="label">Rating</span><span class="value">{{ '%.2f' % ((player.stats.pwRating if player.stats.pwRating is not none else player.stats.rating) or 0) }}</span></div>
+            <div class="card"><span class="label">Rating</span><span class="value" style="color: {{ ((player.stats.pwRating if player.stats.pwRating is not none else player.stats.rating) or 0) | rating_color }}">{{ '%.2f' % ((player.stats.pwRating if player.stats.pwRating is not none else player.stats.rating) or 0) }}</span></div>
             <div class="card"><span class="label">ADR</span><span class="value">{{ '%.1f' % (player.stats.adr or 0) }}</span></div>
             <div class="card"><span class="label">RWS</span><span class="value">{{ '%.2f' % (player.stats.rws or 0) }}</span></div>
             <div class="card"><span class="label">MVP</span><span class="value">{{ player.stats.mvpCount or 0 }}</span></div>
@@ -380,7 +380,7 @@
                         </div>
                     </div>
                     <div class="m-stats">
-                        <div class="m-stat"><span class="m-val">{{ '%.2f' % ((match.pwRating if match.pwRating is not none else match.rating) or 0) }}</span><span class="m-lab">Rating</span></div>
+                        <div class="m-stat"><span class="m-val" style="color: {{ ((match.pwRating if match.pwRating is not none else match.rating) or 0) | rating_color }}">{{ '%.2f' % ((match.pwRating if match.pwRating is not none else match.rating) or 0) }}</span><span class="m-lab">Rating</span></div>
                         <div class="m-stat"><span class="m-val">{{ match.kill or 0 }}/{{ match.death or 0 }}</span><span class="m-lab">K/D</span></div>
                         <div class="m-stat"><span class="m-val">{{ '%.2f' % (match.we or 0) }}</span><span class="m-lab">WE</span></div>
                     </div>
