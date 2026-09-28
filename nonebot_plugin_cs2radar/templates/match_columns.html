@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+body { margin:0; padding:0; background:transparent; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; }
+.board { display:flex; gap:6px; background:#14171d; border-radius:12px; padding:12px; box-sizing:border-box; width:max-content; }
+.col { width:112px; background:#1d2129; border-radius:10px; padding:10px 8px; box-sizing:border-box; border-left:3px solid #3a4152; }
+.col.win { border-left-color:#4ade80; }
+.col.lose { border-left-color:#f87171; }
+.col.tie { border-left-color:#fbbf24; }
+.c-map { font-size:12px; font-weight:700; color:#e8ecf4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.c-time { font-size:9px; color:#6b7385; margin-top:2px; }
+.c-res { font-size:13px; font-weight:800; margin-top:6px; }
+.c-score { font-size:11px; color:#c9d1e0; margin-top:1px; }
+.c-rating { font-size:18px; font-weight:800; margin-top:8px; }
+.c-rlab { font-size:9px; color:#8b93a7; }
+.c-row { display:flex; justify-content:space-between; margin-top:5px; font-size:11px; }
+.c-row .k { color:#8b93a7; }
+.c-row .v { color:#e8ecf4; font-weight:600; }
+.c-minor { margin-top:7px; padding-top:6px; border-top:1px solid #2d3340; }
+.c-minor div { font-size:9px; color:#9aa3b8; margin-top:2px; white-space:nowrap; }
+.c-badge { display:inline-block; font-size:9px; padding:1px 6px; border-radius:5px; background:#2d3340; color:#fbbf24; margin:3px 3px 0 0; }
+.footer { font-size:9px; color:#5b6270; padding:8px 12px 0; }
+</style></head><body>
+<div class="board">
+  {% for c in cols %}
+  <div class="col {{ c.border_cls }}">
+    <div class="c-map">{{ c.map_name }}</div>
+    <div class="c-time">{{ c.time_str }}</div>
+    <div class="c-res" style="color:{{ c.result_color }}">{{ c.result }}</div>
+    <div class="c-score">{{ c.score }}</div>
+    <div class="c-rating" style="color:{{ c.rating_color }}">{{ c.rating_str }}</div>
+    <div class="c-rlab">Rating</div>
+    {% for row in c.rows %}
+    <div class="c-row"><span class="k">{{ row.k }}</span><span class="v" style="color:{{ row.color }}">{{ row.v }}</span></div>
+    {% endfor %}
+    <div class="c-minor">
+      {% for line in c.minor %}<div>{{ line }}</div>{% endfor %}
+      {% for b in c.badges %}<span class="c-badge">{{ b }}</span>{% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+<div class="footer">{{ platform }} · 第 {{ start_index }}–{{ end_index }} 场 / 共 {{ total }} 场 · 生成于 {{ now }}</div>
+</body></html>

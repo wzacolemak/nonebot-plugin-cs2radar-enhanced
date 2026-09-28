@@ -18,7 +18,7 @@ require("nonebot_plugin_htmlrender")
 require("nonebot_plugin_localstore")
 
 from .binding_store import BindingStore
-from .renderer import render_match_card
+from .renderer import render_match_columns
 from .config import Config
 from .crawler import FiveECrawler, FiveEEventCrawler, PWCrawler
 from .llm import LLMEvaluator
@@ -608,8 +608,8 @@ async def handle_five_e_stats(bot: Bot, event: MessageEvent, arg: Message = Comm
         if match_count > 10:
             data["stats"]["recent_matches"] = shown[:10]
             images = [await render_stats_card(data)]
-            for i, m in enumerate(shown, 1):
-                images.append(await render_match_card(m, "5e", i, len(shown)))
+            for i in range(0, len(shown), 10):
+                images.append(await render_match_columns(shown[i:i + 10], "5e", i + 1, len(shown)))
             await _send_match_images(bot, event, images)
             await five_e_stats.finish()
         image_bytes = await render_stats_card(data)
@@ -724,8 +724,8 @@ async def handle_pw_stats(bot: Bot, event: MessageEvent, arg: Message = CommandA
         if match_count > 10:
             data["recent_matches"] = shown[:10]
             images = [await render_pw_stats_card(data)]
-            for i, m in enumerate(shown, 1):
-                images.append(await render_match_card(m, "pw", i, len(shown)))
+            for i in range(0, len(shown), 10):
+                images.append(await render_match_columns(shown[i:i + 10], "pw", i + 1, len(shown)))
             await _send_match_images(bot, event, images)
             await pw_stats.finish()
         image_bytes = await render_pw_stats_card(data)
