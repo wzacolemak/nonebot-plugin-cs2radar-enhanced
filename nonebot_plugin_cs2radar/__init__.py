@@ -8,7 +8,7 @@ from urllib.parse import quote, urlsplit
 
 import httpx
 from nonebot import get_plugin_config, logger, on_command, require
-from nonebot.adapters.onebot.v11 import Bot, Message, MessageEvent, MessageSegment
+from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, Message, MessageEvent, MessageSegment
 from nonebot.exception import FinishedException, MatcherException
 from nonebot.params import CommandArg
 from nonebot.permission import SUPERUSER
@@ -18,6 +18,7 @@ require("nonebot_plugin_htmlrender")
 require("nonebot_plugin_localstore")
 
 from .binding_store import BindingStore
+from .renderer import render_match_card
 from .config import Config
 from .crawler import FiveECrawler, FiveEEventCrawler, PWCrawler
 from .llm import LLMEvaluator
@@ -93,7 +94,7 @@ cs_search = on_command("cs查询", aliases={"cs选手", "csplayer"}, priority=pl
 game_search = on_command("cs赛事", aliases={"赛事", "csgo赛事", "cs2赛事"}, priority=plugin_config.priority, block=True)
 result_search = on_command("赛果", aliases={"cs赛果", "赛事赛果"}, priority=plugin_config.priority, block=True)
 five_e_stats = on_command("5e", aliases={"5e战绩", "5e查询", "cs战绩"}, priority=plugin_config.priority, block=True)
-pw_stats = on_command("pw", aliases={"pw战绩", "pw查询", "完美战绩"}, priority=plugin_config.priority, block=True)
+pw_stats = on_command("pw", aliases={"pw战绩", "pw查询", "完美战绩", "完美"}, priority=plugin_config.priority, block=True)
 pw_login = on_command(
     "pwlogin",
     aliases={"完美登录"},
@@ -416,8 +417,8 @@ async def handle_official_match(event: MessageEvent, args: Message = CommandArg(
 
     match_count = 5
     if len(tokens) == 2:
-        if not tokens[1].isdigit() or not 1 <= int(tokens[1]) <= 10:
-            await official_match.finish("查询场数应在 1 到 10 之间。")
+        if not tokens[1].isdigit() or not 1 <= int(tokens[1]) <= 50:
+            await official_match.finish("查询场数应在 1 到 50 之间。")
         match_count = int(tokens[1])
 
     await official_match.send(f"正在查询该玩家最近 {match_count} 场官匹并生成战绩图...")
@@ -529,17 +530,51 @@ async def handle_result_search(event: MessageEvent):
         await result_search.finish("查询赛果失败，请稍后重试。")
 
 
+async def _send_match_images(bot: Bot, event: MessageEvent, images: list[bytes]) -> None:
+    """以合并转发发送多张图片, 失败时退化为逐条发送"""
+    self_id = str(bot.self_id)
+    nodes = [
+        {
+            "type": "node",
+            "data": {
+                "user_id": self_id,
+                "nickname": "CS2 战绩查询",
+                "content": [MessageSegment.image(b)],
+            },
+        }
+        for b in images
+    ]
+    if isinstance(event, GroupMessageEvent):
+        api, params = "send_group_forward_msg", {"group_id": event.group_id}
+    else:
+        api, params = "send_private_forward_msg", {"user_id": event.user_id}
+    params["messages"] = nodes
+    try:
+        await bot.call_api(api, **params)
+        return
+    except Exception as e:
+        logger.warning(f"[nonebot_plugin_cs2radar] forward send failed ({e}), falling back to plain messages")
+    for b in images:
+        try:
+            if isinstance(event, GroupMessageEvent):
+                await bot.send_group_msg(group_id=event.group_id, message=Message(MessageSegment.image(b)))
+            else:
+                await bot.send_private_msg(user_id=event.user_id, message=Message(MessageSegment.image(b)))
+        except Exception as e:
+            logger.error(f"[nonebot_plugin_cs2radar] fallback image send failed: {e}")
+
+
 @five_e_stats.handle()
 @_guarded(five_e_stats, "five_e")
-async def handle_five_e_stats(event: MessageEvent, arg: Message = CommandArg()):
+async def handle_five_e_stats(bot: Bot, event: MessageEvent, arg: Message = CommandArg()):
     input_str = arg.extract_plain_text().strip()
     if not input_str:
         await five_e_stats.finish("请输入5E玩家域名、ID或昵称，例如: /5e 15429443s91f72")
     match_count = 5
     input_parts = input_str.rsplit(maxsplit=1)
     if len(input_parts) == 2 and input_parts[1].isdigit():
-        if not 1 <= int(input_parts[1]) <= 10:
-            await five_e_stats.finish("查询场数应在 1 到 10 之间。")
+        if not 1 <= int(input_parts[1]) <= 50:
+            await five_e_stats.finish("查询场数应在 1 到 50 之间。")
         input_str = input_parts[0].strip()
         match_count = int(input_parts[1])
     if len(input_str) > 64:
@@ -568,6 +603,15 @@ async def handle_five_e_stats(event: MessageEvent, arg: Message = CommandArg()):
         if not data.get("stats") or not data["stats"].get("career"):
             await five_e_stats.finish(f"未找到玩家 {domain} 的有效战绩数据。")
 
+        matches_all = (data.get("stats") or {}).get("recent_matches") or []
+        shown = matches_all[:match_count]
+        if match_count > 10:
+            data["stats"]["recent_matches"] = shown[:10]
+            images = [await render_stats_card(data)]
+            for i, m in enumerate(shown, 1):
+                images.append(await render_match_card(m, "5e", i, len(shown)))
+            await _send_match_images(bot, event, images)
+            await five_e_stats.finish()
         image_bytes = await render_stats_card(data)
         await five_e_stats.finish(MessageSegment.image(image_bytes))
     except (FinishedException, MatcherException):
@@ -603,7 +647,7 @@ async def handle_pw_login(event: MessageEvent, arg: Message = CommandArg()):
 
 @pw_stats.handle()
 @_guarded(pw_stats, "pw_stats")
-async def handle_pw_stats(event: MessageEvent, arg: Message = CommandArg()):
+async def handle_pw_stats(bot: Bot, event: MessageEvent, arg: Message = CommandArg()):
     raw_input = arg.extract_plain_text().strip()
     if not raw_input:
         await pw_stats.finish("请输入完美平台玩家昵称或 SteamId，例如: /pw sh1ro")
@@ -611,8 +655,8 @@ async def handle_pw_stats(event: MessageEvent, arg: Message = CommandArg()):
     match_count = 5
     input_parts = raw_input.rsplit(maxsplit=1)
     if len(input_parts) == 2 and input_parts[1].isdigit():
-        if not 1 <= int(input_parts[1]) <= 10:
-            await pw_stats.finish("查询场数应在 1 到 10 之间。")
+        if not 1 <= int(input_parts[1]) <= 50:
+            await pw_stats.finish("查询场数应在 1 到 50 之间。")
         input_str = input_parts[0].strip()
         match_count = int(input_parts[1])
     if len(input_str) > 64:
@@ -674,9 +718,16 @@ async def handle_pw_stats(event: MessageEvent, arg: Message = CommandArg()):
             data["summary"]["nickname"] = html.unescape(str(data["summary"]["nickname"]))
         if not data.get("summary", {}).get("avatarUrl"):
             data["summary"]["avatarUrl"] = search_info.get("pvpAvatar")
-        actual_count = len(data.get("recent_matches") or [])
-        data["summary"]["recentTitle"] = f"最近 {actual_count} 场比赛"
-
+        matches_all = data.get("recent_matches") or []
+        shown = matches_all[:match_count]
+        data["summary"]["recentTitle"] = f"最近 {len(shown)} 场比赛"
+        if match_count > 10:
+            data["recent_matches"] = shown[:10]
+            images = [await render_pw_stats_card(data)]
+            for i, m in enumerate(shown, 1):
+                images.append(await render_match_card(m, "pw", i, len(shown)))
+            await _send_match_images(bot, event, images)
+            await pw_stats.finish()
         image_bytes = await render_pw_stats_card(data)
         await pw_stats.finish(MessageSegment.image(image_bytes))
     except (FinishedException, MatcherException):

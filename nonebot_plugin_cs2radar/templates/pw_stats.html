@@ -302,7 +302,7 @@
             <div class="card"><span class="label">K/D</span><span class="value">{{ '%.2f' % (player.stats.kd or ((player.stats.kills / player.stats.deaths) if player.stats.deaths else 0)) }}</span></div>
             <div class="card"><span class="label">HS%</span><span class="value">{{ '%.1f' % ((player.stats.headShotRatio or 0) * 100) if player.stats.headShotRatio is not none and player.stats.headShotRatio < 1 else (player.stats.headShotRatio or '0.0') }}%</span></div>
             <div class="card"><span class="label">比赛</span><span class="value">{{ player.stats.cnt or '0' }}</span></div>
-            <div class="card"><span class="label">平均 WE</span><span class="value">{{ '%.2f' % (player.stats.avgWe or 0) }}</span></div>
+            <div class="card"><span class="label">平均 WE</span><span class="value" style="color: {{ (player.stats.avgWe or 0) | we_color }}">{{ '%.2f' % (player.stats.avgWe or 0) }}</span></div>
             <div class="card"><span class="label">总击杀</span><span class="value">{{ player.stats.kills or 0 }}</span></div>
             <div class="card"><span class="label">总助攻</span><span class="value">{{ player.stats.assists or 0 }}</span></div>
             <div class="card"><span class="label">总死亡</span><span class="value">{{ player.stats.deaths or 0 }}</span></div>
@@ -382,7 +382,7 @@
                     <div class="m-stats">
                         <div class="m-stat"><span class="m-val" style="color: {{ ((match.pwRating if match.pwRating is not none else match.rating) or 0) | rating_color }}">{{ '%.2f' % ((match.pwRating if match.pwRating is not none else match.rating) or 0) }}</span><span class="m-lab">Rating</span></div>
                         <div class="m-stat"><span class="m-val">{{ match.kill or 0 }}/{{ match.death or 0 }}</span><span class="m-lab">K/D</span></div>
-                        <div class="m-stat"><span class="m-val">{{ '%.2f' % (match.we or 0) }}</span><span class="m-lab">WE</span></div>
+                        <div class="m-stat"><span class="m-val" style="color: {{ (match.we or 0) | we_color }}">{{ '%.2f' % (match.we or 0) }}</span><span class="m-lab">WE</span></div>
                     </div>
                 </div>
                 {% endfor %}

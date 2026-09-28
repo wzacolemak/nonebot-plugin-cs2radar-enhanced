@@ -35,6 +35,22 @@ def rating_color(value: Any) -> str:
 
 env.filters["rating_color"] = rating_color
 
+def we_color(value: Any) -> str:
+    try:
+        v = float(str(value).strip())
+    except (TypeError, ValueError):
+        return "#ffffff"
+    if v == 0:
+        return "#ffffff"
+    if v > 8:
+        return "#4ade80"
+    if v < 8:
+        return "#f87171"
+    return "#ffffff"
+
+
+env.filters["we_color"] = we_color
+
 
 async def _secure_html_to_pic(html: str, *, width: int) -> bytes:
     return await html_to_pic(
@@ -372,3 +388,80 @@ async def render_match_detail_card(view_data: dict) -> bytes:
     )
 
     return await _secure_html_to_pic(html_content, width=960)
+
+
+async def render_match_card(m: dict, platform: str, index: int, total: int) -> bytes:
+    """渲染单场战绩小卡片(用于合并转发的多图模式)"""
+    if platform == "5e":
+        try:
+            time_str = datetime.fromtimestamp(int(m.get("start_time") or 0)).strftime("%m-%d %H:%M")
+        except (TypeError, ValueError, OSError):
+            time_str = str(m.get("start_time") or "")
+        map_name = str(m.get("map") or "").replace("de_", "").upper() or "未知地图"
+        if m.get("is_win"):
+            result, result_color = "胜", "#4ade80"
+        elif m.get("is_tie"):
+            result, result_color = "平", "#fbbf24"
+        else:
+            result, result_color = "负", "#f87171"
+        score = f"{m.get('group1_all_score', '?')} : {m.get('group2_all_score', '?')}"
+        try:
+            elo_v = float(str(m.get("change_elo")))
+            elo_str = f"{elo_v:+.2f}"
+            elo_color = "#4ade80" if elo_v > 0 else ("#f87171" if elo_v < 0 else "#ffffff")
+        except (TypeError, ValueError):
+            elo_str, elo_color = "--", "#ffffff"
+        stats_rows = [
+            {"label": "Rating", "val": str(m.get("rating") or "--"), "color": rating_color(m.get("rating"))},
+            {"label": "RWS", "val": str(m.get("rws") or "--"), "color": we_color(m.get("rws"))},
+            {"label": "K/D", "val": f"{m.get('kill', '?')} / {m.get('death', '?')}", "color": "#ffffff"},
+            {"label": "ADR", "val": str(m.get("adr") or "--"), "color": "#ffffff"},
+            {"label": "ELO变化", "val": elo_str, "color": elo_color},
+            {"label": "2K/3K/4K/5K", "val": "/".join(str(m.get('f'"kill_{i}", 0) or 0) for i in (2, 3, 4, 5)), "color": "#ffffff"},
+        ]
+        badges = [b for b, flag in (("MVP", m.get("is_mvp")), ("SVP", m.get("is_svp"))) if flag]
+        mode = str(m.get("game_type") or "")
+    else:
+        st = m.get("startTime")
+        try:
+            time_str = datetime.fromtimestamp(int(st)).strftime("%m-%d %H:%M")
+        except (TypeError, ValueError, OSError):
+            time_str = str(st or "")
+        map_name = str(m.get("mapName") or "").upper() or "未知地图"
+        team, win_team = m.get("team"), m.get("winTeam")
+        if win_team == 0:
+            result, result_color = "平", "#fbbf24"
+        elif team == win_team:
+            result, result_color = "胜", "#4ade80"
+        else:
+            result, result_color = "负", "#f87171"
+        score = f"{m.get('score1', '?')} : {m.get('score2', '?')}"
+        rating_val = m.get("pwRating") if m.get("pwRating") is not None else m.get("rating")
+        try:
+            rating_str = f"{float(rating_val):.2f}"
+        except (TypeError, ValueError):
+            rating_str = "--"
+        try:
+            we_str = f"{float(m.get('we') or 0):.2f}"
+        except (TypeError, ValueError):
+            we_str = "--"
+        stats_rows = [
+            {"label": "Rating", "val": rating_str, "color": rating_color(rating_val)},
+            {"label": "WE", "val": we_str, "color": we_color(m.get("we"))},
+            {"label": "K/D", "val": f"{m.get('kill', 0) or 0} / {m.get('death', 0) or 0}", "color": "#ffffff"},
+            {"label": "助攻", "val": str(m.get("assist", 0) or 0), "color": "#ffffff"},
+            {"label": "MVP次数", "val": str(m.get("mvp", 0) or 0), "color": "#ffffff"},
+            {"label": "模式", "val": str(m.get("mode") or "--"), "color": "#ffffff"},
+        ]
+        badges = []
+        mode = str(m.get("mode") or "")
+    ctx = {
+        "index": index, "total": total, "map_name": map_name, "time_str": time_str,
+        "result": result, "result_color": result_color, "score": score,
+        "stats_rows": stats_rows, "badges": badges, "mode": mode,
+        "platform": "5E" if platform == "5e" else "完美",
+        "now": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    }
+    template = env.get_template("match_card.html")
+    html_content = template.render(m=ctx)
+    return await _secure_html_to_pic(html_content, width=420)

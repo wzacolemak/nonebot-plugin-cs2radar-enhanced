@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+body { margin:0; padding:0; background:transparent; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; }
+.card { width:400px; background:#1a1d24; border-radius:12px; padding:14px 16px; color:#fff; box-sizing:border-box; }
+.head { display:flex; justify-content:space-between; align-items:center; }
+.map { font-size:16px; font-weight:700; }
+.sub { font-size:11px; color:#8b93a7; margin-top:3px; }
+.result { font-size:15px; font-weight:800; padding:4px 12px; border-radius:8px; background:rgba(255,255,255,.08); }
+.score { text-align:right; font-size:14px; margin-top:2px; color:#c9d1e0; }
+.badges { margin-top:6px; }
+.badge { display:inline-block; font-size:10px; padding:2px 8px; border-radius:6px; background:#2d3340; color:#fbbf24; margin-right:6px; }
+.grid { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.stat { flex:1 1 30%; background:#232833; border-radius:8px; padding:8px 6px; text-align:center; box-sizing:border-box; }
+.val { font-size:15px; font-weight:700; }
+.lab { font-size:10px; color:#8b93a7; margin-top:2px; }
+.footer { margin-top:8px; font-size:9px; color:#5b6270; text-align:center; }
+</style></head><body>
+<div class="card">
+  <div class="head">
+    <div>
+      <div class="map">#{{ m.index }}/{{ m.total }} · {{ m.map_name }}</div>
+      <div class="sub">{{ m.platform }}{% if m.mode %} · {{ m.mode }}{% endif %} · {{ m.time_str }}</div>
+    </div>
+    <div style="text-align:right">
+      <div class="result" style="color:{{ m.result_color }}">{{ m.result }}</div>
+      <div class="score">{{ m.score }}</div>
+    </div>
+  </div>
+  {% if m.badges %}<div class="badges">{% for b in m.badges %}<span class="badge">{{ b }}</span>{% endfor %}</div>{% endif %}
+  <div class="grid">
+    {% for row in m.stats_rows %}
+    <div class="stat"><div class="val" style="color:{{ row.color }}">{{ row.val }}</div><div class="lab">{{ row.label }}</div></div>
+    {% endfor %}
+  </div>
+  <div class="footer">CS2 战绩查询 · {{ m.now }}</div>
+</div>
+</body></html>
